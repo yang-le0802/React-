@@ -6,21 +6,20 @@ import {
     Modal,
     message
 }from 'antd'
+import {connect} from 'react-redux'
 import {PAGE_SIZE} from '../../utils/constants'
 import {reqRoles,reqAddRole,reqUpdateRole} from '../../api/index'
 import AddForm from './add-form'
 import AuthForm from './auth-form'
-import memoryUtils from '../../utils/memoryUtils'
 import {formateDate} from '../../utils/dateUtils'
-import storageUtils from "../../utils/storageUtils"
+import {logout} from "../../redux/actions"
 
-/* 权限管理路由 */
-export default class Role extends Component{
+class Role extends Component{
 
     state = {
         roles:[],
-        role:{},//选中的role
-        isShowAdd:false,//是否显示添加界面
+        role:{},
+        isShowAdd:false,
         isShowAuth:false
     }
 
@@ -72,7 +71,6 @@ export default class Role extends Component{
       }
 
     
-    /* 添加角色 */
     addRole=()=>{
         this.form.validateFields(async (error,values)=>{
             if(!error){
@@ -94,17 +92,14 @@ export default class Role extends Component{
     updateRole=async ()=>{
         this.setState({isShowAuth:false})
         const role = this.state.role
-        //得到最新的mune
         const menus = this.auth.current.getMenus()
         role.menus = menus
         role.auth_time = Date.now()
-        role.auth_name = memoryUtils.user.username
+        role.auth_name = this.props.user.username
         const result = await reqUpdateRole(role)
         if(result.status===0){
-            if (role._id === memoryUtils.user.role_id) {
-                memoryUtils.user = {}
-                storageUtils.removeUser()
-                this.props.history.replace('/login')
+            if (role._id === this.props.user.role_id) {
+                this.props.logout()
                 message.success('当前用户角色权限已修改，请重新登录')
               }else{
                 message.success('设置权限成功')
@@ -192,3 +187,7 @@ export default class Role extends Component{
         )
     }
 }
+export default connect(
+    state => ({user:state.user}),
+    {logout}
+)(Role)

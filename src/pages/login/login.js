@@ -1,58 +1,30 @@
 import React,{Component} from 'react';
-import { Form, Icon, Input, Button, message } from 'antd';
+import { Form, Icon, Input, Button} from 'antd';
+import { Redirect } from 'react-router-dom';
+import {connect} from 'react-redux'
 import './login.less'
 import logo from '../../assets/images/logo.png'
-import {reqLogin} from '../../api/index'
-import memoryUtils from '../../utils/memoryUtils'
-import storageUtils from '../../utils/storageUtils'
-import { Redirect } from 'react-router-dom';
+import {login} from '../../redux/actions'
 
 
 /* 登录的路由组件 */
 class Login extends Component {
 
-    //通过getFieldDecorator方法保存输入的表单数据，在表单登录的监听事件中拿到保存的数据，可以进行ajax请求
     handleSubmit = (event)=>{
-        //阻止事件的默认行为
-        event.preventDefault()
-        //对所有的表单字段进行验证。这个函数会先获取表单字段，再利用其中的回调函数进行验证
-        //values中存放的是以{标识名称：表单数据}形式存放的所有表单数据      
+        event.preventDefault()    
         this.props.form.validateFields(async (err, values) => {
-            //如果校验成功
             if (!err) {
-              //请求登录
               const {username,password} = values;
-              const result = await reqLogin(username,password);//{status:0,data:} {status:1,msg:错误信息}
-              //console.log('请求成功',result)             
-              if(result.status===0){//登录成功，提示成功
-                message.success('登录成功')   
-                //保存user
-                const user = result.data  
-                memoryUtils.user = user //保存在内存中，页面刷新后，内存中就不存在user了
-                storageUtils.saveUser(user)//保存在local中去
-
-                //跳转到管理界面去,用replace()不需要回退到登录界面
-                this.props.history.replace('/')
-              }else{//登录失败，提示错误信息
-                message.error(result.msg)
-              }
+              this.props.login(username,password)
               }                        
-             //请求成功不等于登录成功，请求失败不等于登录失败
             else{
               console.log('校验失败！')
             }
           }
         );
-
-        // //手动获取表单字段：得到form对象
-        // const form = this.props.form
-        // //获取表单项的输入数据
-        // //表单数据通过getFieldDecorator方法存入的时候，通过标识名称做标识，所得到的values是对象而不是数组
-        // const values = form.getFieldValue()
     }
 
 
-    //专门用来对密码进行验证的函数
     validatePWD = (rule,value,callback)=>{
         if(!value){
             callback('密码必须输入')
@@ -74,15 +46,11 @@ class Login extends Component {
 
 
     render(){
-        //如果用户已经登录，自动跳转到管理界面
-        const user = memoryUtils.user
+        const user = this.props.user
         if(user && user._id){
-            return <Redirect to='/'/>
+            return <Redirect to='/home'/>
         }
-
-        //得到具有强大功能的form对象，其身上具有收集数据、表单验证等方法
         const form = this.props.form;
-        //解构赋值得到getFieldDecorator方法放到变量getFieldDecorator上
         const {getFieldDecorator} = form;
       
         return (
@@ -92,19 +60,20 @@ class Login extends Component {
             <h1>React项目：后台管理系统</h1>
         </header>
         <section className="login-content">
+        <div className={user.errorMsg ? 'error-msg show' : 'error-msg'}>{user.errorMsg}</div>
             <h2>用户登录</h2>
             <Form onSubmit={this.handleSubmit} className="login-form">
             <Form.Item>
-            {//username是标识名称，输入的用户名保存在这里
-            getFieldDecorator('username',{//配置对象：属性名是特定的一些名称
-            //声明式验证：直接使用别人定义好的规则进行验证
+            {
+            getFieldDecorator('username',{
             rules:[
                 {required:true,  whitespace:true, message:'用户名必须输入'},
                 {min:4, message:'用户名至少四位'},
                 {max:12, message:'用户名最多12位'},
                 {pattern:/^[a-zA-Z0-9_]+$/, message:'用户名必须是英文、数字或者下划线组成'}           
-            ]}
-            )(
+            ],
+            initialValue:'admin'
+            })(
             <Input
               prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
               placeholder="用户名"
@@ -112,9 +81,8 @@ class Login extends Component {
             }
             </Form.Item>
             <Form.Item>
-             {//password是标识名称，输入的密码保存在这里
+             {
             getFieldDecorator('password',{
-                //使用校验器校验，值是一个函数，所以要写一个校验函数
                 rules:[
                     {validator:this.validatePWD},
                 ]
@@ -159,7 +127,10 @@ class Login extends Component {
 3.create能够返回一个函数，返回的函数包装Form组件，生成一个新的组件：Form(Login)。新组件会向Form组件传递一个强大的对象属性：form
  */
 const WrapLogin = Form.create()(Login);
-export default WrapLogin;
+export default connect(
+    state=>({user:state.user}),
+    {login}
+)(WrapLogin);
 
 /* 
 1.收集表单填入的数据 

@@ -48,21 +48,16 @@ export default class Category extends Component{
     parentId:如果没有给参数赋值，就按照状态里的parentId请求，如果给参数赋值了，就根据指定的parentId请求
       */
     getCategorys = async (parentId)=>{
-        //在发请求前，显示loading
         this.setState({loading:true})
         parentId = parentId || this.state.parentId 
         const result = await reqCategorys(parentId)
-        //请求完成之后，隐藏loading
         this.setState({loading:false})
 
         if(result.status===0){
-            //取出分类数组，可能是一级，可能是二级
             const categorys = result.data 
             if(parentId==='0'){
-                //更新一级分类状态
                 this.setState({categorys})
             }else{
-                //更新二级分类列表
                 this.setState({subCategorys:categorys})
             } 
         }else{
@@ -70,24 +65,17 @@ export default class Category extends Component{
         }
     }
 
-    /* 显示指定一级分类对象的二级列表 */
     showSubCategorys = (category)=>{
-        //先更新状态
         this.setState({
             parentId:category._id,
             parentName:category.name
         },()=>{ 
-            //此回调函数在状态更新且重新render后执行
-            //获取二级分类列表显示
             this.getCategorys()
         })
-        //setState()不能立即获取最新的状态，因为setState()是异步更新状态的
     }
 
 
-     /* 显示指定一级分类列表 */
     showCategorys=()=>{
-        //更新为显示一级列表的状态
         this.setState({
             parentId:'0',
             parentName:'',
@@ -96,7 +84,6 @@ export default class Category extends Component{
     }
 
 
-   /* 点击取消确认框 */
     handleCancel=()=>{
         this.form.resetFields()
         this.setState({showStatus:0})
@@ -104,23 +91,17 @@ export default class Category extends Component{
     }
 
 
-    /* 显示添加的确认框 */
     showAdd=()=>{
         this.setState({showStatus:1})
     }
 
     
-    /* 显示修改名称的弹框 */
     showUpdate=(category)=>{
-        //保存分类对象
         this.category = category
-        //更新状态
         this.setState({showStatus:2})
     }
 
     
-
-    /* 添加分类 */
     addCategorys= ()=>{
         this.form.validateFields( async (err,values)=>{
             if(!err){
@@ -142,25 +123,20 @@ export default class Category extends Component{
     }
 
 
-    /* 修改名称 */
     updateCategorys= ()=>{
 
-        //进行表单验证，只有通过了才能处理
         this.form.validateFields(async (err,values)=>{
             if(!err){
-                //点击确定后隐藏弹框
                 this.setState({showStatus:0})
 
                 const categoryId = this.category._id
                 const {categoryName} =values
 
-                //清楚输入数据
                 this.form.resetFields()
 
-                //发请求更新分类
                 const result = await reqUpdateCategorys({categoryId,categoryName})
                 if(result.status===0){
-                //重新更新页面
+
                 this.getCategorys()
                 }
             }
@@ -168,12 +144,10 @@ export default class Category extends Component{
     }
 
     
-    //初始化table的表头
     componentWillMount(){
         this.initColums()
     }
 
-    //发送异步ajax请求,这里获取一级分类列表，因为state初始值是一级的ID
     componentDidMount(){
         this.getCategorys()
     }
@@ -182,9 +156,7 @@ export default class Category extends Component{
     render(){
 
         const {categorys,loading,subCategorys,parentId,parentName,showStatus} = this.state
-        const category = this.category || {} //如果还没有category，指定一个空对象
-
-        //定义card左、右侧的标题
+        const category = this.category || {} 
         const title = parentId==='0' ? '一级分类列表': (
             <span>
                 <LinkButton onClick={this.showCategorys}>一级分类列表</LinkButton>

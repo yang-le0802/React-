@@ -15,7 +15,6 @@ class UpdateForm extends Component{
     }
 
     componentWillMount(){
-        //将form对象通过setForm()传递给父组件
         this.props.setForm(this.props.form)
     }
 
