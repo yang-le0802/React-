@@ -2,25 +2,24 @@
 import React,{Component} from 'react'
 import {withRouter} from 'react-router-dom'
 import { Modal } from 'antd'
+import {connect} from 'react-redux'
 import './header.less'
 import menuList from '../../config/menuConfig'
 import {formateDate} from '../../utils/dateUtils'
-import memoryUtils from '../../utils/memoryUtils'
-import storageUtils from '../../utils/storageUtils'
 import {reqWeather} from '../../api/index' 
 import LinkButton from '../link-button/link-button'
+import {logout} from '../../redux/actions'
 
 
 class Header extends Component{
 
     state={
-        currentTime:formateDate(Date.now()),//当前时间字符串
-        dayPictureUrl:'',//天气图片
-        weather:''//天气文本
+        currentTime:formateDate(Date.now()),
+        dayPictureUrl:'',
+        weather:''
     }
 
     getTime=()=>{
-        //每隔一秒获取当前时间并更新状态
         this.intervalId = setInterval(()=>{
             const currentTime = formateDate(Date.now())
             this.setState({currentTime})
@@ -35,12 +34,11 @@ class Header extends Component{
 
     getTitle=()=>{
         let title
-        //得到当前请求路径
         const path = this.props.location.pathname;
         menuList.forEach(item=>{
-            if(item.key===path){ //在所有的一级菜单中查找
+            if(item.key===path){
                 title = item.title
-            }else if(item.children){ //一级菜单中没找到，在所有二级菜单中查找
+            }else if(item.children){
                 const cItem = item.children.find(cItem=>path.indexOf(cItem.key)===0)
                 if(cItem){
                     title = cItem.title
@@ -51,36 +49,29 @@ class Header extends Component{
     }
 
     logout=()=>{
-        //显示确认框
         Modal.confirm(
             {
                 content: '确定退出登录吗？',
                 onOk:()=> {
-                  //删除保存的user数据
-                  storageUtils.removeUser();
-                  memoryUtils.user = {};
-                  //跳转到登录界面
-                  this.props.history.replace('/login')
+                this.props.logout()
                 },
               }
         )
     }
 
-    /* 在渲染之后执行一次，一般执行异步操作：发ajax请求、启动定时器 */
     componentDidMount(){
         this.getTime()
         this.getWeather()
     }
 
-    componentWillUnmount(){
-        //清除定时器
+    componentWillUnmount(){ 
         clearInterval(this.intervalId)
     }
 
     render(){
         const {currentTime,dayPictureUrl,weather} = this.state
-        const username = memoryUtils.user.username
-        const title = this.getTitle()
+        const username = this.props.user.username
+        const title = this.props.headTitle
         return (
         <div className="header">
            <div className="header-top">
@@ -100,4 +91,7 @@ class Header extends Component{
     }
 }
 
-export default withRouter(Header)
+export default connect(
+    state=>({headTitle:state.headTitle,user:state.user}),
+    {logout}
+)( withRouter(Header))

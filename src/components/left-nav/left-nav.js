@@ -2,10 +2,11 @@
 import React,{Component} from 'react'
 import {Link, withRouter} from 'react-router-dom'
 import { Menu, Icon } from 'antd';
+import {connect} from 'react-redux'
 import './left-nav.less'
 import logo from '../../assets/images/logo.png'
 import menuList from '../../config/menuConfig'
-import memoryUtils from '../../utils/memoryUtils'
+import {setHeadTitle} from '../../redux/actions'
 
 const { SubMenu } = Menu;
 
@@ -14,8 +15,8 @@ class LeftNav extends Component{
 
   hasAuth = (item) => {
     const {key,isPublic} = item
-    const menus = memoryUtils.user.role.menus
-    const username = memoryUtils.user.username
+    const menus = this.props.user.role.menus
+    const username = this.props.user.username
     if(username === 'admin' || isPublic || menus.indexOf(key)!== -1){
       return true
     }else if(item.children){
@@ -24,10 +25,7 @@ class LeftNav extends Component{
     return false
   }
 
-/* 
-根据menu的数据数组生成对应的标签数组
-使用map()+递归调用
- */
+
   getMenuNodes_map = (menuList)=>{
     return menuList.map(item=>{
       if(!item.children){
@@ -57,28 +55,24 @@ class LeftNav extends Component{
   }
 
 
-/* 
-根据menu的数据数组生成对应的标签数组
-使用reduce()+递归调用
- */
   getMenuNodes = (menuList)=>{
-    //得到当前请求的路由路径
     const path = this.props.location.pathname
     return menuList.reduce((pre,item)=>{
       if(this.hasAuth(item)){
         if(!item.children){
+          if(item.key===path || path.indexOf(item.key)===0){
+            this.props.setHeadTitle(item.title)
+          }
           pre.push((
             <Menu.Item key={item.key}>
-            <Link to={item.key}>
+            <Link to={item.key} onClick={()=>this.props.setHeadTitle(item.title)}>
               <Icon type={item.icon} />
               <span>{item.title}</span>
             </Link>            
            </Menu.Item>
           ))
         }else{
-        //查找一个与当前请求路径匹配的Item
         const cItem = item.children.find(cItem=>path.indexOf(cItem.key)===0)
-        //如果存在，说明当前item所对应的子列表需要展开
         if(cItem){
           this.openKey = item.key
         }
@@ -101,27 +95,19 @@ class LeftNav extends Component{
     },[])
   }
 
-  /*
-  在第一次渲染之前执行，执行一次
-  为第一个render()准备数据（必须同步的） 
-   */
   componentWillMount(){
     this.menuNodes = this.getMenuNodes(menuList)
-    //在渲染之前先将menuList中的数组数据动态生成标签数组，渲时直接渲染
   }
 
 
   render(){
-     //得到当前请求的路由路径
      let path = this.props.location.pathname
      if(path.indexOf('/product')===0){
        path = '/product'
      }
-     //得到需要打开菜单项的key
      const openKey = this.openKey
 
        return (
-      //这些menu是路由链接，点击他们会跳转到不同的子路由界面
       <div className="left-nav">
          <Link to='/' className="left-nav-header">
          <img src={logo} alt="logo"/>
@@ -158,4 +144,7 @@ class LeftNav extends Component{
 withRouter高阶组件，包装非路由组件，返回一个新的组件
 新的组件向非路由组件传递3个属性：history/location/match
 */
-export default withRouter(LeftNav)
+export default connect(
+  state=>({user:state.user}),
+  {setHeadTitle}
+)(withRouter(LeftNav))
