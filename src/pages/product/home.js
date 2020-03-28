@@ -6,6 +6,7 @@ import {Card,Select,Input,Button,Icon,Table, message} from 'antd'
 import LinkButton from '../../components/link-button/link-button'
 import {reqProducts,reqSearchProducts,reqUpdateStatus} from '../../api/index'
 import {PAGE_SIZE} from '../../utils/constants'
+import memoryUtils from '../../utils/memoryUtils'
 
 const Option = Select.Option
 
@@ -64,14 +65,22 @@ export default class ProductHome extends Component{
               render:(product)=>{return(
                   <span>
                   {/* 将product对象作为state传递给目标路由组件 */}
-                    <LinkButton onClick={()=>this.props.history.push('/product/detail',product)}>详情</LinkButton>
-                    <LinkButton onClick={()=>this.props.history.push('/product/addupdate',product)}>修改</LinkButton>
+                    <LinkButton onClick={()=>this.showDetail(product)}>详情</LinkButton>
+                    <LinkButton onClick={()=>this.showUpdate(product)}>修改</LinkButton>
                   </span>              
               )}
               },
           ];
     }
 
+    showDetail=(product)=>{
+        memoryUtils.product = product
+        this.props.history.push('/product/detail')
+    }
+    showUpdate=(product)=>{
+        memoryUtils.product = product
+        this.props.history.push('/product/addupdate')
+    }
 
     /* 
     获取指定页码的商品列表数据
